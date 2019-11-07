@@ -24,14 +24,16 @@ module ActionController
         headers: request.headers,
         format: request.format.ref,
         method: request.request_method,
-        path: request.fullpath
+        path: request.fullpath,
+        request: request
       }
 
       ActiveSupport::Notifications.instrument("start_processing.action_controller", raw_payload)
 
       ActiveSupport::Notifications.instrument("process_action.action_controller", raw_payload) do |payload|
         result = super
-        payload[:status] = response.status
+        payload[:status]   = response.status
+        payload[:location] = response.filtered_location
         result
       ensure
         append_info_to_payload(payload)
