@@ -1,7 +1,11 @@
+*   Add `params.member?` to mimic Hash behavior
+
+    *Younes Serraj*
+
 *   `process_action.action_controller` notifications now include the following in their payloads:
 
     * `:request` - the `ActionDispatch::Request`
-    * `:location` - the `Location` response header
+    * `:response` - the `ActionDispatch::Response`
 
     *George Claghorn*
 
