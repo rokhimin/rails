@@ -12,7 +12,9 @@
 
     *Rafael Mendonça França*
 
-*   Changes in `queue_name_prefix` of a job no longer affects all other jobs. Fixes #37084.
+*   Changes in `queue_name_prefix` of a job no longer affects all other jobs.
+
+    Fixes #37084.
 
     *Lucas Mansur*
 
@@ -20,7 +22,7 @@
 
     *Kevin Deisz*
 
-*   Log potential matches in `assert_enqueued_with` and `assert_performed_with`
+*   Log potential matches in `assert_enqueued_with` and `assert_performed_with`.
 
     *Gareth du Plooy*
 
@@ -31,6 +33,17 @@
 *   `assert_enqueued_with` and `assert_performed_with` can now test jobs with relative delay.
 
     *Vlado Cingel*
+
+*   Add jitter to :exponentially_longer
+
+    ActiveJob::Exceptions.retry_on with :exponentially_longer now uses a random amount of jitter in order to
+    prevent the [thundering herd effect.](https://en.wikipedia.org/wiki/Thundering_herd_problem).  Defaults to
+    15% (represented as 0.15) but overridable via the `:jitter` option when using `retry_on`.
+    Jitter is applied when an `Integer`, `ActiveSupport::Duration` or `exponentially_longer`, is passed to the `wait` argument in `retry_on`.
+
+    retry_on(MyError, wait: :exponentially_longer, jitter: 0.30)
+
+    *Anthony Ross*
 
 
 Please check [6-0-stable](https://github.com/rails/rails/blob/6-0-stable/activejob/CHANGELOG.md) for previous changes.
