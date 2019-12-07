@@ -1,3 +1,18 @@
+*   Remove unused `disposition` and `content_type` query parameters for `DiskService`.
+
+    *Peter Zhu*
+
+*   Use `DiskController` for both public and private files.
+
+    `DiskController` is able to handle multiple services by adding a
+    `service_name` field in the generated URL in `DiskService`.
+
+    *Peter Zhu*
+
+*   Variants are tracked in the database to avoid existence checks in the storage service.
+
+    *George Claghorn*
+
 *   Deprecate `service_url` methods in favour of `url`.
 
     Deprecate `Variant#service_url` and `Preview#service_url` to instead use

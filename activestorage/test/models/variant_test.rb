@@ -5,6 +5,14 @@ require "database/setup"
 require "minitest/mock"
 
 class ActiveStorage::VariantTest < ActiveSupport::TestCase
+  setup do
+    @was_tracking, ActiveStorage.track_variants = ActiveStorage.track_variants, false
+  end
+
+  teardown do
+    ActiveStorage.track_variants = @was_tracking
+  end
+
   test "variations have the same key for different types of the same transformation" do
     blob = create_file_blob(filename: "racecar.jpg")
     variant_a = blob.variant(resize: "100x100")
@@ -181,7 +189,7 @@ class ActiveStorage::VariantTest < ActiveSupport::TestCase
   test "url doesn't grow in length despite long variant options" do
     blob = create_file_blob(filename: "racecar.jpg")
     variant = blob.variant(font: "a" * 10_000).processed
-    assert_operator variant.url.length, :<, 730
+    assert_operator variant.url.length, :<, 785
   end
 
   test "works for vips processor" do
