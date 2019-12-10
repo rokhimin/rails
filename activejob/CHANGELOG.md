@@ -1,3 +1,34 @@
+*   Don't run `after_enqueue` and `after_perform` callbacks if the callback chain is halted.
+
+        class MyJob < ApplicationJob
+          before_enqueue { throw(:abort) }
+          after_enqueue { # won't enter here anymore }
+        end
+
+    `after_enqueue` and `after_perform` callbacks will no longer run if the callback chain is halted.
+    This behaviour is a breaking change and won't take effect until Rails 6.2.
+    To enable this behaviour in your app right now, you can add in your app's configuration file
+    `config.active_job.skip_after_callbacks_if_terminated = true`
+
+    *Edouard Chin*
+
+*   Fix enqueuing and performing incorrect logging message.
+
+    Jobs will no longer always log "Enqueued MyJob" or "Performed MyJob" when they actually didn't get enqueued/performed.
+
+    ```ruby
+      class MyJob < ApplicationJob
+        before_enqueue { throw(:abort) }
+      end
+
+      MyJob.perform_later # Will no longer log "Enqueud MyJob" since job wasn't even enqueued through adapter.
+    ```
+
+    A new message will be logged in case a job couldn't be enqueued, either because the callback chain was halted or
+    because an exception happened during enqueing. (i.e. Redis is down when you try to enqueue your job)
+
+    *Edouard Chin*
+
 *   Add an option to disable logging of the job arguments when enqueuing and executing the job.
 
         class SensitiveJob < ApplicationJob

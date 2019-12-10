@@ -2034,6 +2034,27 @@ module ApplicationTests
       assert_equal(:bar, Rails.application.config.my_custom_config[:foo])
     end
 
+    test "config_for merges shared configuration deeply" do
+      app_file "config/custom.yml", <<-RUBY
+      shared:
+        foo:
+          bar:
+            baz: 1
+      development:
+        foo:
+          bar:
+            qux: 2
+      RUBY
+
+      add_to_config <<-RUBY
+        config.my_custom_config = config_for('custom')
+      RUBY
+
+      app "development"
+
+      assert_equal({ baz: 1, qux: 2 }, Rails.application.config.my_custom_config[:foo][:bar])
+    end
+
     test "config_for with empty file returns an empty hash" do
       app_file "config/custom.yml", <<-RUBY
       RUBY
@@ -2254,6 +2275,21 @@ module ApplicationTests
       app "development"
 
       assert_equal false, ActiveJob::Base.return_false_on_aborted_enqueue
+    end
+
+    test "ActiveJob::Base.skip_after_callbacks_if_terminated is true by default" do
+      app "development"
+
+      assert_equal true, ActiveJob::Base.skip_after_callbacks_if_terminated
+    end
+
+    test "ActiveJob::Base.skip_after_callbacks_if_terminated is false in the 6.0 defaults" do
+      remove_from_config '.*config\.load_defaults.*\n'
+      add_to_config 'config.load_defaults "6.0"'
+
+      app "development"
+
+      assert_equal false, ActiveJob::Base.skip_after_callbacks_if_terminated
     end
 
     test "ActiveStorage.queues[:analysis] is :active_storage_analysis by default" do
