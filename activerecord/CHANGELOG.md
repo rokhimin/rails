@@ -1,3 +1,46 @@
+*   Don't allow mutations on the datbase configurations hash.
+
+    Freeze the configurations hash to disallow directly changing the configurations hash. If applications need to change the hash, for example to create adatabases for parallelization, they should use the `DatabaseConfig` object directly.
+
+    Before:
+
+    ```ruby
+    @db_config = ActiveRecord::Base.configurations.configs_for(env_name: "test", spec_name: "primary")
+    @db_config.configuration_hash.merge!(idle_timeout: "0.02")
+    ```
+
+    After:
+
+    ```ruby
+    @db_config = ActiveRecord::Base.configurations.configs_for(env_name: "test", spec_name: "primary")
+    config = @db_config.configuration_hash.merge(idle_timeout: "0.02")
+    db_config = ActiveRecord::DatabaseConfigurations::HashConfig.new(@db_config.env_name, @db_config.spec_name, config)
+    ```
+
+    *Eileen M. Uchitelle*, *John Crepezzi*
+
+*   Remove `:connection_id` from the `sql.active_record` notification.
+
+    *Aaron Patterson*, *Rafael Mendonça França*
+
+*   The `:name` key will no longer be returned as part of `DatabaseConfig#configuration_hash`. Please use `DatabaseConfig#owner_name` instead.
+
+    *Eileen M. Uchitelle*, *John Crepezzi*
+
+*   ActiveRecord's `belongs_to_required_by_default` flag can now be set per model.
+
+    You can now opt-out/opt-in specific models from having their associations required
+    by default.
+
+    This change is meant to ease the process of migrating all your models to have
+    their association required.
+
+    *Edouard Chin*
+
+*   The `connection_config` method has been deprecated, please use `connection_db_config` instead which will return a `DatabaseConfigurations::DatabaseConfig` instead of a `Hash`.
+
+    *Eileen M. Uchitelle*, *John Crepezzi*
+
 *   Retain explicit selections on the base model after applying `includes` and `joins`.
 
     Resolves #34889.
@@ -12,7 +55,7 @@
 
     *Jeff Emminger*, *Gannon McGibbon*
 
-*   A database URL can now contain a querystring value that contains an equal sign. This is needed to support passing PostgresSQL `options`.
+*   A database URL can now contain a querystring value that contains an equal sign. This is needed to support passing PostgreSQL `options`.
 
     *Joshua Flanagan*
 
