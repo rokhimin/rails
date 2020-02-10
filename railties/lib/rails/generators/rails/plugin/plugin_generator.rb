@@ -57,6 +57,12 @@ module Rails
       template "gitignore", ".gitignore"
     end
 
+    def version_control
+      if !options[:skip_git] && !options[:pretend]
+        run "git init", capture: options[:quiet], abort_on_failure: false
+      end
+    end
+
     def lib
       template "lib/%namespaced_name%.rb"
       template "lib/tasks/%namespaced_name%_tasks.rake"
@@ -203,6 +209,7 @@ task default: :test
         build(:license)
         build(:gitignore) unless options[:skip_git]
         build(:gemfile)   unless options[:skip_gemfile]
+        build(:version_control)
       end
 
       def create_app_files
