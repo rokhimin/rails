@@ -15,7 +15,7 @@ module ActiveRecord
         @rw_handler = @handlers[:writing]
         @ro_handler = @handlers[:reading]
         @owner_name = "ActiveRecord::Base"
-        db_config = ActiveRecord::Base.configurations.configs_for(env_name: "arunit", spec_name: "primary")
+        db_config = ActiveRecord::Base.configurations.configs_for(env_name: "arunit", name: "primary")
         @rw_pool = @handlers[:writing].establish_connection(db_config)
         @ro_pool = @handlers[:reading].establish_connection(db_config)
       end
@@ -100,11 +100,11 @@ module ActiveRecord
 
           assert_not_nil pool = ActiveRecord::Base.connection_handlers[:writing].retrieve_connection_pool("ActiveRecord::Base")
           assert_equal "db/primary.sqlite3", pool.db_config.database
-          assert_equal "default", pool.db_config.spec_name
+          assert_equal "default", pool.db_config.name
 
           assert_not_nil pool = ActiveRecord::Base.connection_handlers[:reading].retrieve_connection_pool("ActiveRecord::Base")
           assert_equal "db/readonly.sqlite3", pool.db_config.database
-          assert_equal "readonly", pool.db_config.spec_name
+          assert_equal "readonly", pool.db_config.name
         ensure
           ActiveRecord::Base.configurations = @prev_configs
           ActiveRecord::Base.establish_connection(:arunit)
@@ -215,14 +215,14 @@ module ActiveRecord
               ActiveRecord::Base.connected_to(database: :readonly, role: :writing) { }
             end
           end
-          assert_equal "connected_to can only accept a `database` or a `role` argument, but not both arguments.", error.message
+          assert_equal "`connected_to` cannot accept a `database` argument with any other arguments.", error.message
         end
 
         def test_switching_connections_without_database_and_role_raises
           error = assert_raises(ArgumentError) do
             ActiveRecord::Base.connected_to { }
           end
-          assert_equal "must provide a `database` or a `role`.", error.message
+          assert_equal "must provide a `shard` and/or `role`.", error.message
         end
 
         def test_switching_connections_with_database_symbol_uses_default_role
@@ -376,7 +376,7 @@ module ActiveRecord
 
         reading_handler = ActiveRecord::Base.connection_handlers[:reading]
 
-        reading = ActiveRecord::Base.with_handler(:reading) do
+        reading = ActiveRecord::Base.connected_to(role: :reading) do
           Person.connection_handler
         end
 
@@ -397,7 +397,7 @@ module ActiveRecord
           r << ActiveRecord::Base.connection_handler
         end
 
-        reading = ActiveRecord::Base.with_handler(:reading) do
+        reading = ActiveRecord::Base.connected_to(role: :reading) do
           enum.next
         end
 
