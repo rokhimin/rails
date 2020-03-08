@@ -1,16 +1,20 @@
 # frozen_string_literal: true
 
+require "active_support/string_inquirer"
+
 module ActiveSupport
-  # This is a special case of StringInquirer that defines the three default
-  # environments at construction time based on the environment string.
-  class EnvironmentInquirer < StringInquirer
+  class EnvironmentInquirer < StringInquirer #:nodoc:
     DEFAULT_ENVIRONMENTS = ["development", "test", "production"]
     def initialize(env)
       super(env)
 
-      DEFAULT_ENVIRONMENTS.each do |default_env|
-        singleton_class.define_method(:"#{env}?", (env == default_env).method(:itself))
+      DEFAULT_ENVIRONMENTS.each do |default|
+        instance_variable_set :"@#{default}", env == default
       end
+    end
+
+    DEFAULT_ENVIRONMENTS.each do |env|
+      class_eval "def #{env}?; @#{env}; end"
     end
   end
 end
