@@ -1,3 +1,24 @@
+*   Add support for `if_not_exists` option for adding index.
+
+    The `add_index` method respects `if_not_exists` option. If it is set to true
+    index won't be added.
+
+    Usage:
+
+    ```
+      add_index :users, :account_id, if_not_exists: true
+    ```
+
+    The `if_not_exists` option passed to `create_table` also gets propogated to indexes
+    created within that migration so that if table and its indexes exist then there is no
+    attempt to create them again.
+
+    *Prathamesh Sonpatki*
+
+*   Add `ActiveRecord::Base#previously_new_record?` to show if a record was new before the last save.
+
+    *Tom Ward*
+
 *   Support descending order for `find_each`, `find_in_batches` and `in_batches`.
 
     Batch processing methods allow you to work with the records in batches, greatly reducing memory consumption, but records are always batched from oldest id to newest.
@@ -541,6 +562,5 @@
 *   Allow generated `create_table` migrations to include or skip timestamps.
 
     *Michael Duchemin*
-
 
 Please check [6-0-stable](https://github.com/rails/rails/blob/6-0-stable/activerecord/CHANGELOG.md) for previous changes.
