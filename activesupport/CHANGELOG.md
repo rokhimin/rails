@@ -1,3 +1,19 @@
+*   Calling `ActiveSupport::TaggedLogging#tagged` without a block now returns a tagged logger.
+
+    ```ruby
+    logger.tagged("BCX").info("Funky time!") # => [BCX] Funky time!
+    ```
+
+    *Eugene Kenny*
+
+*   Align `Range#cover?` extension behavior with Ruby behavior for backwards ranges.
+
+    `(1..10).cover?(5..3)` now returns `false`, as it does in plain Ruby.
+    
+    Also update `#include?` and `#===` behavior to match.
+
+    *Michael Groeneman*  
+
 *   Update to TZInfo v2.0.0.
 
     This changes the output of `ActiveSupport::TimeZone.utc_to_local`, but
