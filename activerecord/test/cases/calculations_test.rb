@@ -861,6 +861,28 @@ class CalculationsTest < ActiveRecord::TestCase
     assert_equal expected, actual
   end
 
+  def test_pluck_functions_with_alias
+    assert_equal [
+      [1, "The First Topic"], [2, "The Second Topic of the day"],
+      [3, "The Third Topic of the day"], [4, "The Fourth Topic of the day"],
+      [5, "The Fifth Topic of the day"]
+    ], Topic.order(:id).pluck(
+      Arel.sql("COALESCE(id, 0) id"),
+      Arel.sql("COALESCE(title, 'untitled') title")
+    )
+  end
+
+  def test_pluck_functions_without_alias
+    assert_equal [
+      [1, "The First Topic"], [2, "The Second Topic of the day"],
+      [3, "The Third Topic of the day"], [4, "The Fourth Topic of the day"],
+      [5, "The Fifth Topic of the day"]
+    ], Topic.order(:id).pluck(
+      Arel.sql("COALESCE(id, 0)"),
+      Arel.sql("COALESCE(title, 'untitled')")
+    )
+  end
+
   def test_calculation_with_polymorphic_relation
     part = ShipPart.create!(name: "has trinket")
     part.trinkets.create!
@@ -999,6 +1021,13 @@ class CalculationsTest < ActiveRecord::TestCase
     assert_equal({ "proposed" => 0, "published" => 1 }, Book.group(:status).sum(:difficulty))
     assert_equal({ "proposed" => 0, "published" => 2 }, Book.group(:status).minimum(:status))
     assert_equal({ "proposed" => 0, "published" => 1 }, Book.group(:status).maximum(:difficulty))
+  end
+
+  def test_minimum_and_maximum_on_non_numeric_type
+    assert_equal Date.new(2004, 4, 15), Topic.minimum(:last_read)
+    assert_equal Date.new(2004, 4, 15), Topic.maximum(:last_read)
+    assert_equal({ false => Date.new(2004, 4, 15), true => nil }, Topic.group(:approved).minimum(:last_read))
+    assert_equal({ false => Date.new(2004, 4, 15), true => nil }, Topic.group(:approved).maximum(:last_read))
   end
 
   def test_select_avg_with_group_by_as_virtual_attribute_with_sql
