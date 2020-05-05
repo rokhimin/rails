@@ -1,3 +1,29 @@
+*   Fix `rewhere` to truly overwrite collided where clause by new where clause.
+
+    ```ruby
+    steve = Person.find_by(name: "Steve")
+    david = Author.find_by(name: "David")
+
+    relation = Essay.where(writer: steve)
+
+    # Before
+    relation.rewhere(writer: david).to_a # => []
+
+    # After
+    relation.rewhere(writer: david).to_a # => [david]
+    ```
+
+    *Ryuta Kamizono*
+
+*   Inspect time attributes with subsec.
+
+    ```ruby
+    p Knot.create
+    => #<Knot id: 1, created_at: "2016-05-05 01:29:47.116928000">
+    ```
+
+    *akinomaeni*
+
 *   Deprecate passing a column to `type_cast`.
 
     *Ryuta Kamizono*

@@ -39,10 +39,16 @@ module ActiveRecord
         if left.empty? || right.empty?
           common
         else
-          or_clause = WhereClause.new(
-            [left.ast.or(right.ast)],
-          )
-          common + or_clause
+          left = left.ast
+          left = left.expr if left.is_a?(Arel::Nodes::Grouping)
+
+          right = right.ast
+          right = right.expr if right.is_a?(Arel::Nodes::Grouping)
+
+          or_clause = Arel::Nodes::Or.new(left, right)
+
+          common.predicates << Arel::Nodes::Grouping.new(or_clause)
+          common
         end
       end
 
@@ -85,10 +91,16 @@ module ActiveRecord
         predicates.any? do |x|
           case x
           when Arel::Nodes::In
-            Array === x.right && x.right.empty?
+            Arel::Nodes::CastedArray === x.right && x.right.value.empty?
           when Arel::Nodes::Equality
             x.right.respond_to?(:unboundable?) && x.right.unboundable?
           end
+        end
+      end
+
+      def each_attribute(&block)
+        predicates.each do |node|
+          Arel.fetch_attribute(node, &block)
         end
       end
 
@@ -141,7 +153,15 @@ module ActiveRecord
 
         def except_predicates(columns)
           predicates.reject do |node|
-            Arel.fetch_attribute(node) { |attr| columns.include?(attr.name.to_s) }
+            Arel.fetch_attribute(node) do |attr|
+              columns.any? do |column|
+                if column.is_a?(Arel::Attributes::Attribute)
+                  attr == column
+                else
+                  attr.name.to_s == column.to_s
+                end
+              end
+            end
           end
         end
 
