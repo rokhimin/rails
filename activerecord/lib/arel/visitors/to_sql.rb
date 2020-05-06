@@ -81,10 +81,6 @@ module Arel # :nodoc: all
           end
         end
 
-        def visit_Arel_Nodes_CastedArray(o, collector)
-          collector << o.value_for_database.map! { |v| quote(v) }.join(", ")
-        end
-
         def visit_Arel_Nodes_Casted(o, collector)
           collector << quote(o.value_for_database).to_s
         end
@@ -325,6 +321,31 @@ module Arel # :nodoc: all
           end
         end
 
+        def visit_Arel_Nodes_HomogeneousIn(o, collector)
+          collector.preparable = false
+          collector << "("
+
+          collector << quote_table_name(o.table_name) << "." << quote_column_name(o.column_name)
+
+          if o.type == :in
+            collector << "IN ("
+          else
+            collector << "NOT IN ("
+          end
+
+          values = o.values.map { |v| @connection.quote v }
+
+          expr = if values.empty?
+            @connection.quote(nil)
+          else
+            values.join(",")
+          end
+
+          collector << expr
+          collector << "))"
+          collector
+        end
+
         def visit_Arel_SelectManager(o, collector)
           collector << "("
           visit(o.ast, collector) << ")"
@@ -517,8 +538,12 @@ module Arel # :nodoc: all
           collector.preparable = false
           attr, values = o.left, o.right
 
-          if Arel::Nodes::CastedArray === values
-            return collector << "1=0" if values.value.empty?
+          if Array === values
+            unless values.empty?
+              values.delete_if { |value| unboundable?(value) }
+            end
+
+            return collector << "1=0" if values.empty?
           end
 
           visit(attr, collector) << " IN ("
@@ -529,8 +554,12 @@ module Arel # :nodoc: all
           collector.preparable = false
           attr, values = o.left, o.right
 
-          if Arel::Nodes::CastedArray === values
-            return collector << "1=1" if values.value.empty?
+          if Array === values
+            unless values.empty?
+              values.delete_if { |value| unboundable?(value) }
+            end
+
+            return collector << "1=1" if values.empty?
           end
 
           visit(attr, collector) << " NOT IN ("

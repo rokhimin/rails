@@ -91,7 +91,7 @@ module ActiveRecord
         predicates.any? do |x|
           case x
           when Arel::Nodes::In
-            Arel::Nodes::CastedArray === x.right && x.right.value.empty?
+            Array === x.right && x.right.empty?
           when Arel::Nodes::Equality
             x.right.respond_to?(:unboundable?) && x.right.unboundable?
           end
@@ -137,7 +137,7 @@ module ActiveRecord
         end
 
         def equality_node?(node)
-          node.respond_to?(:operator) && node.operator == :==
+          !node.is_a?(String) && node.equality?
         end
 
         def invert_predicate(node)

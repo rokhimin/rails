@@ -162,7 +162,7 @@ defaults to `:debug` for all environments. The available log levels are: `:debug
 * `config.autoloader` sets the autoloading mode. This option defaults to `:zeitwerk` if `6.0` is specified in `config.load_defaults`. Applications can still use the classic autoloader by setting this value to `:classic` after loading the framework defaults:
 
     ```ruby
-    config.load_defaults "6.0"
+    config.load_defaults 6.0
     config.autoloader = :classic
     ```
 
@@ -770,7 +770,7 @@ There are a number of settings available on `config.action_mailer`:
 
 * `config.action_mailer.perform_caching` specifies whether the mailer templates should perform fragment caching or not. If it's not specified, the default will be `true`.
 
-* `config.action_mailer.delivery_job` specifies delivery job for mail. Defaults to `ActionMailer::DeliveryJob`.
+* `config.action_mailer.delivery_job` specifies delivery job for mail. Defaults to `ActionMailer::MailDeliveryJob`.
 
 
 ### Configuring Active Support

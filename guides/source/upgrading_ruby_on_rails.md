@@ -75,6 +75,8 @@ To allow you to upgrade to new defaults one by one, the update task has created 
 Upgrading from Rails 6.0 to Rails 6.1
 -------------------------------------
 
+For more information on changes made to Rails 6.1 please see the [release notes](6_1_release_notes.html).
+
 ### `Rails.application.config_for` return value no longer supports access with String keys.
 
 Given a configuration file like this:
@@ -521,7 +523,7 @@ Applications can load Rails 6 defaults and still use the classic autoloader by s
 ```ruby
 # config/application.rb
 
-config.load_defaults "6.0"
+config.load_defaults 6.0
 config.autoloader = :classic
 ```
 
