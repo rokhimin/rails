@@ -363,7 +363,7 @@ module ActiveRecord
     def group!(*args) # :nodoc:
       args.flatten!
 
-      self.group_values |= args
+      self.group_values += args
       self
     end
 
@@ -483,7 +483,7 @@ module ActiveRecord
               raise ArgumentError, "Hash arguments in .unscope(*args) must have :where as the key."
             end
 
-            target_values = Array(target_value)
+            target_values = resolve_arel_attributes(Array.wrap(target_value))
             self.where_clause = where_clause.except(*target_values)
           end
         else
@@ -1399,6 +1399,30 @@ module ActiveRecord
         end
       end
 
+      def resolve_arel_attributes(attrs)
+        attrs.flat_map do |attr|
+          case attr
+          when Arel::Attributes::Attribute
+            attr
+          when Hash
+            attr.flat_map do |table, columns|
+              table = table.to_s
+              Array(columns).map do |column|
+                predicate_builder.resolve_arel_attribute(table, column)
+              end
+            end
+          else
+            attr = attr.to_s
+            if attr.include?(".")
+              table, column = attr.split(".", 2)
+              predicate_builder.resolve_arel_attribute(table, column)
+            else
+              attr
+            end
+          end
+        end
+      end
+
       # Checks to make sure that the arguments are not blank. Note that if some
       # blank-like object were initially passed into the query method, then this
       # method will not raise an error.
@@ -1426,6 +1450,8 @@ module ActiveRecord
         values = other.values
         STRUCTURAL_OR_METHODS.reject do |method|
           v1, v2 = @values[method], values[method]
+          v1 = v1.uniq if v1.is_a?(Array)
+          v2 = v2.uniq if v2.is_a?(Array)
           v1 == v2 || (!v1 || v1.empty?) && (!v2 || v2.empty?)
         end
       end

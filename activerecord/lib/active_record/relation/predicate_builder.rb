@@ -2,8 +2,6 @@
 
 module ActiveRecord
   class PredicateBuilder # :nodoc:
-    delegate :resolve_column_aliases, to: :table
-
     def initialize(table)
       @table = table
       @handlers = []
@@ -17,7 +15,10 @@ module ActiveRecord
     end
 
     def build_from_hash(attributes)
+      attributes = table.resolve_column_aliases(attributes)
+      attributes.stringify_keys!
       attributes = convert_dot_notation_to_hash(attributes)
+
       expand_from_hash(attributes)
     end
 
@@ -59,6 +60,10 @@ module ActiveRecord
     def build_bind_attribute(column_name, value)
       attr = Relation::QueryAttribute.new(column_name.to_s, value, table.type(column_name))
       Arel::Nodes::BindParam.new(attr)
+    end
+
+    def resolve_arel_attribute(table_name, column_name)
+      table.associated_table(table_name).arel_attribute(column_name)
     end
 
     protected
