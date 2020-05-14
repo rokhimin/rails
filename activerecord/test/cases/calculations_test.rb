@@ -8,6 +8,7 @@ require "models/contract"
 require "models/edge"
 require "models/organization"
 require "models/possession"
+require "models/author"
 require "models/topic"
 require "models/reply"
 require "models/numeric_data"
@@ -22,7 +23,7 @@ require "models/rating"
 require "support/stubs/strong_parameters"
 
 class CalculationsTest < ActiveRecord::TestCase
-  fixtures :companies, :accounts, :topics, :speedometers, :minivans, :books, :posts, :comments
+  fixtures :companies, :accounts, :authors, :topics, :speedometers, :minivans, :books, :posts, :comments
 
   def test_should_sum_field
     assert_equal 318, Account.sum(:credit_limit)
@@ -728,6 +729,18 @@ class CalculationsTest < ActiveRecord::TestCase
     assert_equal [ topic.approved ], relation.pluck(:approved)
     assert_equal [ topic.last_read ], relation.pluck(:last_read)
     assert_equal [ topic.written_on ], relation.pluck(:written_on)
+
+    expected = [
+      [Date.new(2004, 4, 15), "unread"],
+      [Date.new(2004, 4, 15), "reading"],
+      [Date.new(2004, 4, 15), "read"],
+    ]
+    actual =
+      Author.joins(:topics, :books).order(:"books.last_read")
+      .where.not("books.last_read": nil)
+      .pluck(:"topics.last_read", :"books.last_read")
+
+    assert_equal expected, actual
   end
 
   def test_pluck_with_type_cast_does_not_corrupt_the_query_cache
@@ -1037,19 +1050,41 @@ class CalculationsTest < ActiveRecord::TestCase
     assert_equal 50, result[2].credit_limit
   end
 
+  def test_count_takes_attribute_type_precedence_over_database_type
+    assert_called(
+      Account.connection, :select_all,
+      returns: ActiveRecord::Result.new(["count"], [["10"]])
+    ) do
+      result = Account.count
+      assert_equal 10, result
+      assert_instance_of Integer, result
+    end
+  end
+
+  def test_sum_takes_attribute_type_precedence_over_database_type
+    assert_called(
+      Account.connection, :select_all,
+      returns: ActiveRecord::Result.new(["sum"], [[10.to_d]])
+    ) do
+      result = Account.sum(:credit_limit)
+      assert_equal 10, result
+      assert_instance_of Integer, result
+    end
+  end
+
   def test_group_by_attribute_with_custom_type
     assert_equal({ "proposed" => 2, "published" => 2 }, Book.group(:status).count)
   end
 
   def test_aggregate_attribute_on_custom_type
-    assert_equal 4, Book.sum(:status)
-    assert_equal 1, Book.sum(:difficulty)
-    assert_equal 0, Book.minimum(:status)
-    assert_equal 1, Book.maximum(:difficulty)
-    assert_equal({ "proposed" => 0, "published" => 4 }, Book.group(:status).sum(:status))
-    assert_equal({ "proposed" => 0, "published" => 1 }, Book.group(:status).sum(:difficulty))
-    assert_equal({ "proposed" => 0, "published" => 2 }, Book.group(:status).minimum(:status))
-    assert_equal({ "proposed" => 0, "published" => 1 }, Book.group(:status).maximum(:difficulty))
+    assert_nil Book.sum(:status)
+    assert_equal "medium", Book.sum(:difficulty)
+    assert_equal "easy", Book.minimum(:difficulty)
+    assert_equal "medium", Book.maximum(:difficulty)
+    assert_equal({ "proposed" => "proposed", "published" => nil }, Book.group(:status).sum(:status))
+    assert_equal({ "proposed" => "easy", "published" => "medium" }, Book.group(:status).sum(:difficulty))
+    assert_equal({ "proposed" => "easy", "published" => "easy" }, Book.group(:status).minimum(:difficulty))
+    assert_equal({ "proposed" => "easy", "published" => "medium" }, Book.group(:status).maximum(:difficulty))
   end
 
   def test_minimum_and_maximum_on_non_numeric_type
@@ -1058,6 +1093,71 @@ class CalculationsTest < ActiveRecord::TestCase
     assert_equal({ false => Date.new(2004, 4, 15), true => nil }, Topic.group(:approved).minimum(:last_read))
     assert_equal({ false => Date.new(2004, 4, 15), true => nil }, Topic.group(:approved).maximum(:last_read))
   end
+
+  def test_minimum_and_maximum_on_time_attributes
+    assert_minimum_and_maximum_on_time_attributes(Time)
+  end
+
+  def test_minimum_and_maximum_on_tz_aware_attributes
+    with_timezone_config aware_attributes: true, zone: "Pacific Time (US & Canada)" do
+      Topic.reset_column_information
+      assert_minimum_and_maximum_on_time_attributes(ActiveSupport::TimeWithZone)
+    end
+  ensure
+    Topic.reset_column_information
+  end
+
+  def assert_minimum_and_maximum_on_time_attributes(time_class)
+    actual = Topic.minimum(:written_on)
+    assert_equal Time.utc(2003, 7, 16, 14, 28, 11, 223300), actual
+    assert_instance_of time_class, actual
+
+    actual = Topic.maximum(:written_on)
+    assert_equal Time.utc(2013, 7, 13, 11, 11, 0, 9900), actual
+    assert_instance_of time_class, actual
+
+    expected = {
+      false => Time.utc(2003, 7, 16, 14, 28, 11, 223300),
+      true => Time.utc(2004, 7, 15, 14, 28, 0, 9900),
+    }
+    actual = Topic.group(:approved).minimum(:written_on)
+    assert_equal expected, actual
+    assert_instance_of time_class, actual[true]
+    assert_instance_of time_class, actual[true]
+
+    expected = {
+      false => Time.utc(2003, 7, 16, 14, 28, 11, 223300),
+      true => Time.utc(2013, 7, 13, 11, 11, 0, 9900),
+    }
+    actual = Topic.group(:approved).maximum(:written_on)
+    assert_equal expected, actual
+    assert_instance_of time_class, actual[true]
+    assert_instance_of time_class, actual[true]
+
+    actual = Author.joins(:topics).maximum(:"topics.written_on")
+    assert_equal Time.utc(2004, 7, 15, 14, 28, 0, 9900), actual
+    assert_instance_of time_class, actual
+
+    actual = Author.joins(:topics).minimum(:"topics.written_on")
+    assert_equal Time.utc(2003, 7, 16, 14, 28, 11, 223300), actual
+    assert_instance_of time_class, actual
+
+    expected = {
+      1 => Time.utc(2003, 7, 16, 14, 28, 11, 223300),
+      2 => Time.utc(2004, 7, 15, 14, 28, 0, 9900),
+    }
+
+    actual = Author.joins(:topics).group(:id).maximum(:"topics.written_on")
+    assert_equal expected, actual
+    assert_instance_of time_class, actual[1]
+    assert_instance_of time_class, actual[2]
+
+    actual = Author.joins(:topics).group(:id).minimum(:"topics.written_on")
+    assert_equal expected, actual
+    assert_instance_of time_class, actual[1]
+    assert_instance_of time_class, actual[2]
+  end
+  private :assert_minimum_and_maximum_on_time_attributes
 
   def test_select_avg_with_group_by_as_virtual_attribute_with_sql
     rails_core = companies(:rails_core)
