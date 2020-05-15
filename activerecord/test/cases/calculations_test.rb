@@ -729,7 +729,9 @@ class CalculationsTest < ActiveRecord::TestCase
     assert_equal [ topic.approved ], relation.pluck(:approved)
     assert_equal [ topic.last_read ], relation.pluck(:last_read)
     assert_equal [ topic.written_on ], relation.pluck(:written_on)
+  end
 
+  def test_pluck_type_cast_with_conflict_column_names
     expected = [
       [Date.new(2004, 4, 15), "unread"],
       [Date.new(2004, 4, 15), "reading"],
@@ -742,6 +744,29 @@ class CalculationsTest < ActiveRecord::TestCase
 
     assert_equal expected, actual
   end
+
+  def test_pluck_type_cast_with_joins_without_table_name_qualified_column
+    assert_pluck_type_cast_without_table_name_qualified_column(Author.joins(:books))
+  end
+
+  def test_pluck_type_cast_with_left_joins_without_table_name_qualified_column
+    assert_pluck_type_cast_without_table_name_qualified_column(Author.left_joins(:books))
+  end
+
+  def test_pluck_type_cast_with_eager_load_without_table_name_qualified_column
+    assert_pluck_type_cast_without_table_name_qualified_column(Author.eager_load(:books))
+  end
+
+  def assert_pluck_type_cast_without_table_name_qualified_column(authors)
+    expected = [
+      [nil, "unread"],
+      ["ebook", "reading"],
+      ["paperback", "read"],
+    ]
+    actual = authors.order(:last_read).where.not("books.last_read": nil).pluck(:format, :last_read)
+    assert_equal expected, actual
+  end
+  private :assert_pluck_type_cast_without_table_name_qualified_column
 
   def test_pluck_with_type_cast_does_not_corrupt_the_query_cache
     topic = topics(:first)
@@ -1134,11 +1159,17 @@ class CalculationsTest < ActiveRecord::TestCase
     assert_instance_of time_class, actual[true]
     assert_instance_of time_class, actual[true]
 
-    actual = Author.joins(:topics).maximum(:"topics.written_on")
+    assert_minimum_and_maximum_on_time_attributes_joins_with_column(time_class, :"topics.written_on")
+    assert_minimum_and_maximum_on_time_attributes_joins_with_column(time_class, :written_on)
+  end
+  private :assert_minimum_and_maximum_on_time_attributes
+
+  def assert_minimum_and_maximum_on_time_attributes_joins_with_column(time_class, column)
+    actual = Author.joins(:topics).maximum(column)
     assert_equal Time.utc(2004, 7, 15, 14, 28, 0, 9900), actual
     assert_instance_of time_class, actual
 
-    actual = Author.joins(:topics).minimum(:"topics.written_on")
+    actual = Author.joins(:topics).minimum(column)
     assert_equal Time.utc(2003, 7, 16, 14, 28, 11, 223300), actual
     assert_instance_of time_class, actual
 
@@ -1147,17 +1178,17 @@ class CalculationsTest < ActiveRecord::TestCase
       2 => Time.utc(2004, 7, 15, 14, 28, 0, 9900),
     }
 
-    actual = Author.joins(:topics).group(:id).maximum(:"topics.written_on")
+    actual = Author.joins(:topics).group(:id).maximum(column)
     assert_equal expected, actual
     assert_instance_of time_class, actual[1]
     assert_instance_of time_class, actual[2]
 
-    actual = Author.joins(:topics).group(:id).minimum(:"topics.written_on")
+    actual = Author.joins(:topics).group(:id).minimum(column)
     assert_equal expected, actual
     assert_instance_of time_class, actual[1]
     assert_instance_of time_class, actual[2]
   end
-  private :assert_minimum_and_maximum_on_time_attributes
+  private :assert_minimum_and_maximum_on_time_attributes_joins_with_column
 
   def test_select_avg_with_group_by_as_virtual_attribute_with_sql
     rails_core = companies(:rails_core)

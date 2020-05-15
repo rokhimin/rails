@@ -308,11 +308,10 @@ module ActiveRecord
         result = skip_query_cache_if_necessary { @klass.connection.select_all(query_builder) }
 
         type_cast_calculated_value(result.cast_values.first, operation) do |value|
-          if type = column.try(:type_caster) || klass.attribute_types[column_name.to_s]
-            type.deserialize(value)
-          else
-            value
+          type = column.try(:type_caster) || klass.attribute_types.fetch(name = column_name.to_s) do
+            lookup_cast_type_from_join_dependencies(name, build_join_dependencies) || Type.default_value
           end
+          type.deserialize(value)
         end
       end
 
@@ -379,11 +378,10 @@ module ActiveRecord
           key = key_records[key] if associated
 
           result[key] = type_cast_calculated_value(row[column_alias], operation) do |value|
-            if type ||= column.try(:type_caster) || klass.attribute_types[column_name.to_s]
-              type.deserialize(value)
-            else
-              value
+            type ||= column.try(:type_caster) || klass.attribute_types.fetch(name = column_name.to_s) do
+              lookup_cast_type_from_join_dependencies(name, build_join_dependencies) || Type.default_value
             end
+            type.deserialize(value)
           end
         end
       end
@@ -410,14 +408,34 @@ module ActiveRecord
         @klass.type_for_attribute(field_name, &block)
       end
 
+      def build_join_dependencies
+        join_dependencies = []
+        join_dependencies.unshift construct_join_dependency(
+          select_association_list(joins_values + left_outer_joins_values, join_dependencies), nil
+        )
+      end
+
+      def lookup_cast_type_from_join_dependencies(name, join_dependencies)
+        join_dependencies.each do |join_dependency|
+          join_dependency.each do |join|
+            type = join.base_klass.attribute_types.fetch(name, nil)
+            return type if type
+          end
+        end
+        nil
+      end
+
       def type_cast_pluck_values(result, columns)
+        join_dependencies = nil
         cast_types = if result.columns.size != columns.size
           klass.attribute_types
         else
           columns.map.with_index do |column, i|
             column.try(:type_caster) ||
               klass.attribute_types.fetch(name = result.columns[i]) do
-                result.column_types.fetch(name, Type.default_value)
+                join_dependencies ||= build_join_dependencies
+                lookup_cast_type_from_join_dependencies(name, join_dependencies) ||
+                  result.column_types[name] || Type.default_value
               end
           end
         end
