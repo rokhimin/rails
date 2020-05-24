@@ -1,3 +1,68 @@
+*   Default engine `ENGINE=InnoDB` is no longer dumped to make schema more agnostic.
+
+    Before:
+
+    ```ruby
+    create_table "accounts", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci", force: :cascade do |t|
+    end
+    ```
+
+    After:
+
+    ```ruby
+    create_table "accounts", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    end
+    ```
+
+    *Ryuta Kamizono*
+
+*   Added delegated type as an alternative to single-table inheritance for representing class hierarchies.
+    See ActiveRecord::DelegatedType for the full description.
+
+    *DHH*
+
+*   Deprecate aggregations with group by duplicated fields.
+
+    To migrate to Rails 6.2's behavior, use `uniq!(:group)` to deduplicate group fields.
+
+    ```ruby
+    accounts = Account.group(:firm_id)
+
+    # duplicated group fields, deprecated.
+    accounts.merge(accounts.where.not(credit_limit: nil)).sum(:credit_limit)
+    # => {
+    #   [1, 1] => 50,
+    #   [2, 2] => 60
+    # }
+
+    # use `uniq!(:group)` to deduplicate group fields.
+    accounts.merge(accounts.where.not(credit_limit: nil)).uniq!(:group).sum(:credit_limit)
+    # => {
+    #   1 => 50,
+    #   2 => 60
+    # }
+    ```
+
+    *Ryuta Kamizono*
+
+*   Deprecate duplicated query annotations.
+
+    To migrate to Rails 6.2's behavior, use `uniq!(:annotate)` to deduplicate query annotations.
+
+    ```ruby
+    accounts = Account.where(id: [1, 2]).annotate("david and mary")
+
+    # duplicated annotations, deprecated.
+    accounts.merge(accounts.rewhere(id: 3))
+    # SELECT accounts.* FROM accounts WHERE accounts.id = 3 /* david and mary */ /* david and mary */
+
+    # use `uniq!(:annotate)` to deduplicate annotations.
+    accounts.merge(accounts.rewhere(id: 3)).uniq!(:annotate)
+    # SELECT accounts.* FROM accounts WHERE accounts.id = 3 /* david and mary */
+    ```
+
+    *Ryuta Kamizono*
+
 *   Resolve conflict between counter cache and optimistic locking.
 
     Bump an Active Record instance's lock version after updating its counter
