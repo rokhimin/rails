@@ -81,7 +81,7 @@ module ActionDispatch # :nodoc:
     CONTENT_TYPE = "Content-Type"
     SET_COOKIE   = "Set-Cookie"
     LOCATION     = "Location"
-    NO_CONTENT_CODES = [100, 101, 102, 204, 205, 304]
+    NO_CONTENT_CODES = [100, 101, 102, 103, 204, 205, 304]
 
     cattr_accessor :default_charset, default: "utf-8"
     cattr_accessor :default_headers
@@ -448,8 +448,8 @@ module ActionDispatch # :nodoc:
     end
 
     def set_content_type(content_type, charset)
-      type = (content_type || "").dup
-      type << "; charset=#{charset.to_s.downcase}" if charset
+      type = content_type || ""
+      type = "#{type}; charset=#{charset.to_s.downcase}" if charset
       set_header CONTENT_TYPE, type
     end
 
