@@ -673,7 +673,7 @@ module ActiveRecord
     end
 
     def where!(opts, *rest) # :nodoc:
-      self.where_clause += build_where_clause(opts, *rest)
+      self.where_clause += build_where_clause(opts, rest)
       self
     end
 
@@ -740,9 +740,7 @@ module ActiveRecord
     end
 
     def having!(opts, *rest) # :nodoc:
-      opts = sanitize_forbidden_attributes(opts)
-      self.references_values |= PredicateBuilder.references(opts) if Hash === opts
-      self.having_clause += having_clause_factory.build(opts, rest)
+      self.having_clause += build_having_clause(opts, rest)
       self
     end
 
@@ -1076,13 +1074,42 @@ module ActiveRecord
         end
       end
 
-      def build_where_clause(opts, *rest)
+      def build_where_clause(opts, rest = []) # :nodoc:
         opts = sanitize_forbidden_attributes(opts)
         self.references_values |= PredicateBuilder.references(opts) if Hash === opts
-        where_clause_factory.build(opts, rest)
+        where_clause_factory.build(opts, rest) do |table_name|
+          lookup_reflection_from_join_dependencies(table_name)
+        end
       end
+      alias :build_having_clause :build_where_clause
 
     private
+      def lookup_reflection_from_join_dependencies(table_name)
+        each_join_dependencies do |join|
+          return join.reflection if table_name == join.table_name
+        end
+        nil
+      end
+
+      def each_join_dependencies(join_dependencies = build_join_dependencies)
+        join_dependencies.each do |join_dependency|
+          join_dependency.each do |join|
+            yield join
+          end
+        end
+      end
+
+      def build_join_dependencies
+        associations = joins_values | left_outer_joins_values
+        associations |= eager_load_values unless eager_load_values.empty?
+        associations |= includes_values unless includes_values.empty?
+
+        join_dependencies = []
+        join_dependencies.unshift construct_join_dependency(
+          select_association_list(associations, join_dependencies), nil
+        )
+      end
+
       def assert_mutability!
         raise ImmutableRelation if @loaded
         raise ImmutableRelation if defined?(@arel) && @arel
@@ -1269,7 +1296,9 @@ module ActiveRecord
           arel_attribute(field)
         elsif field.match?(/\A\w+\.\w+\z/)
           table, column = field.split(".")
-          predicate_builder.resolve_arel_attribute(table, column)
+          predicate_builder.resolve_arel_attribute(table, column) do
+            lookup_reflection_from_join_dependencies(table)
+          end
         else
           yield field
         end
@@ -1461,6 +1490,5 @@ module ActiveRecord
       def where_clause_factory
         @where_clause_factory ||= Relation::WhereClauseFactory.new(klass, predicate_builder)
       end
-      alias having_clause_factory where_clause_factory
   end
 end
