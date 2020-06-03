@@ -308,7 +308,7 @@ module ActiveRecord
     # last updated record.
     #
     #   Product.where("name like ?", "%Game%").cache_key(:last_reviewed_at)
-    def cache_key(timestamp_column = :updated_at)
+    def cache_key(timestamp_column = "updated_at")
       @cache_keys ||= {}
       @cache_keys[timestamp_column] ||= klass.collection_cache_key(self, timestamp_column)
     end
@@ -343,10 +343,12 @@ module ActiveRecord
     end
 
     def compute_cache_version(timestamp_column) # :nodoc:
+      timestamp_column = timestamp_column.to_s
+
       if loaded? || distinct_value
         size = records.size
         if size > 0
-          timestamp = max_by(&timestamp_column)._read_attribute(timestamp_column)
+          timestamp = records.map { |record| record.read_attribute(timestamp_column) }.max
         end
       else
         collection = eager_loading? ? apply_join_dependency : self
@@ -752,7 +754,7 @@ module ActiveRecord
       ActiveRecord::Associations::AliasTracker.create(connection, table.name, joins, aliases)
     end
 
-    class StrictLoadingScope
+    class StrictLoadingScope # :nodoc:
       def self.empty_scope?
         true
       end
