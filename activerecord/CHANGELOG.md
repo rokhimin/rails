@@ -1,3 +1,39 @@
+*   Do not mark Postgresql MAC address and UUID attributes as changed when the assigned value only varies by case.
+
+    *Peter Fry*
+
+*   Resolve issue with insert_all unique_by option when used with expression index.
+
+    When the `:unique_by` option of `ActiveRecord::Persistence.insert_all` and
+    `ActiveRecord::Persistence.upsert_all` was used with the name of an expression index, an error
+    was raised. Adding a guard around the formatting behavior for the `:unique_by` corrects this.
+
+    Usage:
+
+    ```ruby
+    create_table :books, id: :integer, force: true do |t|
+      t.column :name, :string
+      t.index "lower(name)", unique: true
+    end
+
+    Book.insert_all [{ name: "MyTest" }], unique_by: :index_books_on_lower_name
+    ```
+
+    Fixes #39516.
+
+    *Austen Madden*
+
+*   Add basic support for CHECK constraints to database migrations.
+
+    Usage:
+
+    ```ruby
+    add_check_constraint :products, "price > 0", name: "price_check"
+    remove_check_constraint :products, name: "price_check"
+    ```
+
+    *fatkodima*
+
 *   Add `ActiveRecord::Base.strict_loading_by_default` and `ActiveRecord::Base.strict_loading_by_default=`
     to enable/disable strict_loading mode by default for a model. The configuration's value is
     inheritable by subclasses, but they can override that value and it will not impact parent class.
