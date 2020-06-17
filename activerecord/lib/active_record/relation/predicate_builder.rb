@@ -2,6 +2,17 @@
 
 module ActiveRecord
   class PredicateBuilder # :nodoc:
+    require "active_record/relation/predicate_builder/array_handler"
+    require "active_record/relation/predicate_builder/basic_object_handler"
+    require "active_record/relation/predicate_builder/range_handler"
+    require "active_record/relation/predicate_builder/relation_handler"
+    require "active_record/relation/predicate_builder/association_query_value"
+    require "active_record/relation/predicate_builder/polymorphic_array_value"
+
+    # No-op BaseHandler to work Mashal.load(File.read("legacy_relation.dump")).
+    # TODO: Remove the constant alias once Rails 6.1 has released.
+    BaseHandler = BasicObjectHandler
+
     def initialize(table)
       @table = table
       @handlers = []
@@ -88,7 +99,7 @@ module ActiveRecord
               end
             elsif associated_table.through_association?
               next associated_table.predicate_builder.expand_from_hash(
-                associated_table.association_join_foreign_key => value
+                associated_table.join_foreign_key => value
               )
             end
 
@@ -156,11 +167,3 @@ module ActiveRecord
       end
   end
 end
-
-require "active_record/relation/predicate_builder/array_handler"
-require "active_record/relation/predicate_builder/basic_object_handler"
-require "active_record/relation/predicate_builder/range_handler"
-require "active_record/relation/predicate_builder/relation_handler"
-
-require "active_record/relation/predicate_builder/association_query_value"
-require "active_record/relation/predicate_builder/polymorphic_array_value"

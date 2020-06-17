@@ -94,7 +94,9 @@ class YamlSerializationTest < ActiveRecord::TestCase
   end
 
   def test_deserializing_rails_41_yaml
-    topic = YAML.load(yaml_fixture("rails_4_1"))
+    topic = assert_deprecated do
+      YAML.load(yaml_fixture("rails_4_1"))
+    end
 
     assert_predicate topic, :new_record?
     assert_nil topic.id
@@ -103,7 +105,9 @@ class YamlSerializationTest < ActiveRecord::TestCase
   end
 
   def test_deserializing_rails_4_2_0_yaml
-    topic = YAML.load(yaml_fixture("rails_4_2_0"))
+    topic = assert_deprecated do
+      YAML.load(yaml_fixture("rails_4_2_0"))
+    end
 
     assert_not_predicate topic, :new_record?
     assert_equal 1, topic.id
@@ -132,8 +136,8 @@ class YamlSerializationTest < ActiveRecord::TestCase
   private
     def yaml_fixture(file_name)
       path = File.expand_path(
-        "../support/yaml_compatibility_fixtures/#{file_name}.yml",
-        __dir__
+        "support/yaml_compatibility_fixtures/#{file_name}.yml",
+        TEST_ROOT
       )
       File.read(path)
     end

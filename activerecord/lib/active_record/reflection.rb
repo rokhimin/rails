@@ -165,8 +165,6 @@ module ActiveRecord
         @class_name ||= -(options[:class_name]&.to_s || derive_class_name)
       end
 
-      JoinKeys = Struct.new(:key, :foreign_key) # :nodoc:
-
       # Returns a list of scopes that should be applied for this Reflection
       # object when querying the database.
       def scopes
@@ -727,6 +725,10 @@ module ActiveRecord
 
       def join_foreign_key
         foreign_key
+      end
+
+      def join_foreign_type
+        foreign_type
       end
 
       private
