@@ -24,7 +24,8 @@ By default, Rails links to these assets on the current host in the public folder
 
 ```ruby
 config.action_controller.asset_host = "assets.example.com"
-image_tag("rails.png") # => <img src="http://assets.example.com/images/rails.png" />
+image_tag("rails.png") 
+# => <img src="http://assets.example.com/images/rails.png" />
 ```
 
 #### auto_discovery_link_tag
@@ -32,8 +33,8 @@ image_tag("rails.png") # => <img src="http://assets.example.com/images/rails.png
 Returns a link tag that browsers and feed readers can use to auto-detect an RSS, Atom, or JSON feed.
 
 ```ruby
-auto_discovery_link_tag(:rss, "http://www.example.com/feed.rss", { title: "RSS Feed" }) # =>
-  <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="http://www.example.com/feed.rss" />
+auto_discovery_link_tag(:rss, "http://www.example.com/feed.rss", { title: "RSS Feed" }) 
+# => <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="http://www.example.com/feed.rss" />
 ```
 
 #### image_path
@@ -47,7 +48,8 @@ image_path("edit.png") # => /assets/edit.png
 Fingerprint will be added to the filename if config.assets.digest is set to true.
 
 ```ruby
-image_path("edit.png") # => /assets/edit-2d1a2db63fc738690021fedb5a65b68e.png
+image_path("edit.png") 
+# => /assets/edit-2d1a2db63fc738690021fedb5a65b68e.png
 ```
 
 #### image_url
@@ -71,7 +73,8 @@ image_tag("icon.png") # => <img src="/assets/icon.png" />
 Returns an HTML script tag for each of the sources provided. You can pass in the filename (`.js` extension is optional) of JavaScript files that exist in your `app/assets/javascripts` directory for inclusion into the current page or you can pass the full path relative to your document root.
 
 ```ruby
-javascript_include_tag "common" # => <script src="/assets/common.js"></script>
+javascript_include_tag "common" 
+# => <script src="/assets/common.js"></script>
 ```
 
 #### javascript_path
@@ -87,7 +90,8 @@ javascript_path "common" # => /assets/common.js
 Computes the URL to a JavaScript asset in the `app/assets/javascripts` directory. This will call `javascript_path` internally and merge with your current host or your asset host.
 
 ```ruby
-javascript_url "common" # => http://www.example.com/assets/common.js
+javascript_url "common" 
+# => http://www.example.com/assets/common.js
 ```
 
 #### stylesheet_link_tag
@@ -95,7 +99,8 @@ javascript_url "common" # => http://www.example.com/assets/common.js
 Returns a stylesheet link tag for the sources specified as arguments. If you don't specify an extension, `.css` will be appended automatically.
 
 ```ruby
-stylesheet_link_tag "application" # => <link href="/assets/application.css" media="screen" rel="stylesheet" />
+stylesheet_link_tag "application" 
+# => <link href="/assets/application.css" media="screen" rel="stylesheet" />
 ```
 
 #### stylesheet_path
@@ -111,7 +116,8 @@ stylesheet_path "application" # => /assets/application.css
 Computes the URL to a stylesheet asset in the `app/assets/stylesheets` directory. This will call `stylesheet_path` internally and merge with your current host or your asset host.
 
 ```ruby
-stylesheet_url "application" # => http://www.example.com/assets/application.css
+stylesheet_url "application" 
+# => http://www.example.com/assets/application.css
 ```
 
 ### AtomFeedHelper
@@ -263,8 +269,10 @@ datetime_select("article", "published_on")
 Reports the approximate distance in time between two Time or Date objects or integers as seconds. Set `include_seconds` to true if you want more detailed approximations.
 
 ```ruby
-distance_of_time_in_words(Time.now, Time.now + 15.seconds)        # => less than a minute
-distance_of_time_in_words(Time.now, Time.now + 15.seconds, include_seconds: true)  # => less than 20 seconds
+distance_of_time_in_words(Time.now, Time.now + 15.seconds) 
+# => less than a minute
+distance_of_time_in_words(Time.now, Time.now + 15.seconds, include_seconds: true) 
+# => less than 20 seconds
 ```
 
 #### select_date
@@ -365,7 +373,7 @@ select_year(Date.today, start_year: 1900, end_year: 2009)
 Like `distance_of_time_in_words`, but where `to_time` is fixed to `Time.now`.
 
 ```ruby
-time_ago_in_words(3.minutes.from_now)  # => 3 minutes
+time_ago_in_words(3.minutes.from_now) # => 3 minutes
 ```
 
 #### time_select
@@ -758,7 +766,7 @@ NOTE: Only the `option` tags are returned, you have to wrap this call in a regul
 Returns a string of option tags that have been compiled by iterating over the `collection` and assigning the result of a call to the `value_method` as the option value and the `text_method` as the option text.
 
 ```ruby
-# options_from_collection_for_select(collection, value_method, text_method, selected = nil)
+options_from_collection_for_select(collection, value_method, text_method, selected = nil)
 ```
 
 For example, imagine a loop iterating over each person in `@project.people` to generate an input tag:
@@ -1002,8 +1010,8 @@ number_to_currency(1234567890.50) # => $1,234,567,890.50
 Formats the bytes in size into a more understandable representation; useful for reporting file sizes to users.
 
 ```ruby
-number_to_human_size(1234)          # => 1.2 KB
-number_to_human_size(1234567)       # => 1.2 MB
+number_to_human_size(1234)    # => 1.2 KB
+number_to_human_size(1234567) # => 1.2 MB
 ```
 
 #### number_to_percentage
@@ -1011,7 +1019,7 @@ number_to_human_size(1234567)       # => 1.2 MB
 Formats a number as a percentage string.
 
 ```ruby
-number_to_percentage(100, precision: 0)        # => 100%
+number_to_percentage(100, precision: 0) # => 100%
 ```
 
 #### number_to_phone
@@ -1035,8 +1043,8 @@ number_with_delimiter(12345678) # => 12,345,678
 Formats a number with the specified level of `precision`, which defaults to 3.
 
 ```ruby
-number_with_precision(111.2345)     # => 111.235
-number_with_precision(111.2345, precision: 2)  # => 111.23
+number_with_precision(111.2345)               # => 111.235
+number_with_precision(111.2345, precision: 2) # => 111.23
 ```
 
 ### SanitizeHelper
@@ -1151,7 +1159,7 @@ would output:
 </a>
 ```
 
-See [the API Doc for more info](https://api.rubyonrails.org/classes/ActionView/Helpers/UrlHelper.html#method-i-link_to)
+See [the API Documentation for more information](https://api.rubyonrails.org/classes/ActionView/Helpers/UrlHelper.html#method-i-link_to)
 
 #### button_to
 
@@ -1172,7 +1180,7 @@ would roughly output something like:
 </form>
 ```
 
-See [the API Doc for more info](https://api.rubyonrails.org/classes/ActionView/Helpers/UrlHelper.html#method-i-button_to)
+See [the API Documentation for more information](https://api.rubyonrails.org/classes/ActionView/Helpers/UrlHelper.html#method-i-button_to)
 
 ### CsrfHelper
 
