@@ -81,7 +81,7 @@ module ActionDispatch
           end
 
           def visit_CAT(node)
-            [visit(node.left), visit(node.right)].join
+            "#{visit(node.left)}#{visit(node.right)}"
           end
 
           def visit_SYMBOL(node)
@@ -107,8 +107,8 @@ module ActionDispatch
           end
 
           def visit_STAR(node)
-            re = @matchers[node.left.to_sym] || ".+"
-            "(#{re})"
+            re = @matchers[node.left.to_sym]
+            re ? "(#{re})" : "(.+)"
           end
 
           def visit_OR(node)
