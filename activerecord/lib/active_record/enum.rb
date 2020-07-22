@@ -47,13 +47,14 @@ module ActiveRecord
   #     enum status: [ :active, :archived ], _scopes: false
   #   end
   #
-  # You can set the default value from the database declaration, like:
+  # You can set the default enum value by setting +:_default+, like:
   #
-  #   create_table :conversations do |t|
-  #     t.column :status, :integer, default: 0
+  #   class Conversation < ActiveRecord::Base
+  #     enum status: [ :active, :archived ], _default: "active"
   #   end
   #
-  # Good practice is to let the first declared status be the default.
+  #   conversation = Conversation.new
+  #   conversation.status # => "active"
   #
   # Finally, it's also possible to explicitly map the relation between attribute and
   # database integer with a hash:
@@ -182,7 +183,13 @@ module ActiveRecord
         detect_enum_conflict!(name, "#{name}=")
 
         attr = attribute_alias?(name) ? attribute_alias(name) : name
+        type, options = attributes_to_define_after_schema_loads[attr]
+
         attribute(attr, **default) do |subtype|
+          if type && !type.is_a?(Proc)
+            subtype = _lookup_cast_type(attr, type, options)
+          end
+
           EnumType.new(attr, enum_values, subtype)
         end
 
