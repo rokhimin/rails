@@ -1052,7 +1052,7 @@ module ActiveRecord
       end
 
       def aliased_table
-        @aliased_table ||= Arel::Table.new(table_name, type_caster: klass.type_caster)
+        klass.arel_table
       end
 
       def join_primary_key(klass = self.klass)

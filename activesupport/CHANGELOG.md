@@ -1,3 +1,13 @@
+*   Fixed issue in `ActiveSupport::Cache::MemCacheStore` which caused duplicate compression,
+    and caused the provided `compression_threshold` to not be respected.
+
+    *Max Gurewitz*
+
+*   Prevent `RedisCacheStore` and `MemCacheStore` from performing compression
+    when reading entries written with `raw: true`.
+
+    *Max Gurewitz*
+
 *   `URI.parser` is deprecated and will be removed in Rails 6.2. Use
     `URI::DEFAULT_PARSER` instead.
 

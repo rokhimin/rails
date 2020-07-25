@@ -76,6 +76,15 @@ class MemCacheStoreTest < ActiveSupport::TestCase
     assert_equal "2", cache.read("foo")
   end
 
+  def test_raw_read_entry_compression
+    cache = lookup_store(raw: true)
+    cache.write("foo", 2)
+
+    assert_not_called_on_instance_of ActiveSupport::Cache::Entry, :compress! do
+      cache.read("foo")
+    end
+  end
+
   def test_raw_values_with_marshal
     cache = lookup_store(raw: true)
     cache.write("foo", Marshal.dump([]))
@@ -120,7 +129,43 @@ class MemCacheStoreTest < ActiveSupport::TestCase
     assert_not_equal value, @cache.read("foo")
   end
 
+  def test_no_compress_when_below_threshold
+    cache = lookup_store(compress: true, compress_threshold: 10.kilobytes)
+    val = random_string(2.kilobytes)
+    compressed = Zlib::Deflate.deflate(val)
+
+    assert_called(
+      Zlib::Deflate,
+      :deflate,
+      "Memcached writes should not compress when below compress threshold.",
+      times: 0,
+      returns: compressed
+    ) do
+      cache.write("foo", val)
+    end
+  end
+
+  def test_no_multiple_compress
+    cache = lookup_store(compress: true)
+    val = random_string(100.kilobytes)
+    compressed = Zlib::Deflate.deflate(val)
+
+    assert_called(
+      Zlib::Deflate,
+      :deflate,
+      "Memcached writes should not perform duplicate compression.",
+      times: 1,
+      returns: compressed
+    ) do
+      cache.write("foo", val)
+    end
+  end
+
   private
+    def random_string(length)
+      (0...length).map { (65 + rand(26)).chr }.join
+    end
+
     def store
       [:mem_cache_store, ENV["MEMCACHE_SERVERS"] || "localhost:11211"]
     end

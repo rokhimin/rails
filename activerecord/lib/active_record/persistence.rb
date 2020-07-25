@@ -414,8 +414,8 @@ module ActiveRecord
 
         def _substitute_values(values)
           values.map do |name, value|
-            attr = arel_attribute(name)
-            bind = predicate_builder.build_bind_attribute(name, value)
+            attr = arel_table[name]
+            bind = predicate_builder.build_bind_attribute(attr.name, value)
             [attr, bind]
           end
         end
